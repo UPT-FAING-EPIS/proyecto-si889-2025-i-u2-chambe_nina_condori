@@ -28,7 +28,7 @@ https://www.youtube.com/watch?v=pqg5qtxOhXs
 
 1.- Abrir terminal CMD
 
-2.- git glone https://github.com/UPT-FAING-EPIS/proyecto-si889-2025-i-u1-proyecto_chambenina_patrones.git
+2.- git glone https://github.com/UPT-FAING-EPIS/proyecto-si889-2025-i-u2-chambe_nina_condori
 
 3.- cd charguepassv4
 
