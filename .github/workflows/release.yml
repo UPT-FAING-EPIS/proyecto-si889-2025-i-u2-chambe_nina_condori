@@ -1,4 +1,4 @@
-name: Release from pubspec.yaml
+name: Auto Release Flutter App from pubspec.yaml
 
 on:
   push:
@@ -10,53 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up Git user
-      run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
 
-    - name: Extract version from pubspec.yaml
-      id: version
-      run: |
-        VERSION=$(grep '^version:' chargepassv4/pubspec.yaml | awk '{print $2}' | cut -d "+" -f 1)
-        TAG="v$VERSION"
-        echo "Versión encontrada en pubspec.yaml: $VERSION"
-        echo "TAG=$TAG" >> $GITHUB_ENV
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
+      - name: Extract version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' chargepassv4/pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
+          echo "Version encontrada: $VERSION"
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Check if tag already exists
-      id: check_tag
-      run: |
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
-          echo "Tag $TAG ya existe. Cancelando."
-          echo "exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "Tag $TAG no existe. Continuando."
-          echo "exists=false" >> $GITHUB_OUTPUT
+      - name: Create tag
+        run: |
+          git tag ${{ steps.version.outputs.version }}
+          git push origin ${{ steps.version.outputs.version }}
 
-    - name: Exit if tag already exists
-      if: steps.check_tag.outputs.exists == 'true'
-      run: exit 0
+      - name: Compress Flutter project
+        run: |
+          cd chargepassv4
+          zip -r ../chargepassv4-${{ steps.version.outputs.version }}.zip .
 
-    - name: Create Git tag and push
-      run: |
-        git tag $TAG
-        git push origin $TAG
-
-    - name: Zip Flutter project
-      run: |
-        cd chargepassv4
-        zip -r ../chargepassv4-$TAG.zip .
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.version.outputs.tag }}
-        name: Release ${{ steps.version.outputs.tag }}
-        files: chargepassv4-${{ steps.version.outputs.tag }}.zip
-        make_latest: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          files: chargepassv4-${{ steps.version.outputs.version }}.zip
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
