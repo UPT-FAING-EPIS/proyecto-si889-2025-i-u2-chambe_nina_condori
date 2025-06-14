@@ -15,3 +15,7 @@
 
 ## [0.0.1] - Borrador inicial
 - Estructura base del proyecto creada localmente.
+## [1.0.4] - Borrador inicial 1 
+- Estructura base del proyecto creada localmente.
+## [1.0.5] - Borrador inicial 2 
+- Estructura base del proyecto creada localmente.
