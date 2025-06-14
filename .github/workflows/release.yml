@@ -22,23 +22,16 @@ jobs:
       id: version
       run: |
         git fetch --tags
-        
-        LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+
+        LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
         echo "Último tag encontrado: $LAST_TAG"
 
-        # Obtener partes del último tag
         VERSION=${LAST_TAG#v}
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-        
-        # Contar líneas cambiadas
+
         CHANGED_LINES=$(git diff --numstat $LAST_TAG HEAD -- 'chargepassv4/**' | awk '{added += $1; deleted += $2} END {print added + deleted}')
-        echo "Líneas cambiadas: $CHANGED_LINES"
-
-        # Contar commits que afectaron chargepassv4 desde el último tag
         COMMIT_COUNT=$(git log $LAST_TAG..HEAD --pretty=format:"%H" -- 'chargepassv4/**' | wc -l)
-        echo "Commits detectados desde último tag: $COMMIT_COUNT"
 
-        # Lógica de incremento
         if [ "$CHANGED_LINES" -ge 1 ] && [ "$CHANGED_LINES" -le 10 ]; then
           PATCH=$((PATCH+1))
         elif [ "$CHANGED_LINES" -gt 10 ] && [ "$CHANGED_LINES" -le 50 ]; then
@@ -49,33 +42,40 @@ jobs:
           MINOR=0
           PATCH=0
         elif [ "$CHANGED_LINES" -eq 0 ] && [ "$COMMIT_COUNT" -ge 1 ]; then
-          echo "No hay cambios de líneas, pero sí commits. Incrementando patch."
           PATCH=$((PATCH+1))
         else
-          echo "No hay suficientes cambios ni commits relevantes para generar un nuevo release."
+          echo "No hay suficientes cambios. Cancelando."
+          echo "new_tag=" >> $GITHUB_OUTPUT
           exit 0
         fi
 
         NEW_TAG="v$MAJOR.$MINOR.$PATCH"
         echo "Nuevo tag generado: $NEW_TAG"
-
         echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
+    - name: Exit if no new tag
+      if: steps.version.outputs.new_tag == ''
+      run: echo "No se generó un nuevo tag, saliendo..."
+
     - name: Create Git tag
+      if: steps.version.outputs.new_tag != ''
       run: |
         git tag ${{ steps.version.outputs.new_tag }}
         git push origin ${{ steps.version.outputs.new_tag }}
 
     - name: Compress Flutter project
+      if: steps.version.outputs.new_tag != ''
       run: |
         cd chargepassv4
         zip -r ../chargepassv4-${{ steps.version.outputs.new_tag }}.zip .
 
     - name: Create GitHub Release
+      if: steps.version.outputs.new_tag != ''
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.new_tag }}
         name: Release ${{ steps.version.outputs.new_tag }}
         files: chargepassv4-${{ steps.version.outputs.new_tag }}.zip
+        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
