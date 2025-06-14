@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v43
+        uses: actions/checkout@v4  # ✅ Versión correcta
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v3
+        uses: subosito/flutter-action@v2  # ✅ Última versión conocida
         with:
           flutter-version: '3.22.0'
 
