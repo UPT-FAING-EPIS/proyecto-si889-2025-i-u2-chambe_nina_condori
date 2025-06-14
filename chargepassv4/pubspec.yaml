@@ -1,7 +1,7 @@
 name: chargepassv4
 description: A Flutter-based password management app with Firebase integration, encryption, and UI customization.
 
-version: 1.0.9+1
+version: 1.0.10+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.10] - 2025-06-14
+### Changed
+- Se mejoró la documentación del proyecto y se corrigieron detalles menores de formato.
+- Se actualizó el pipeline para crear releases automáticamente basados en `pubspec.yaml`.
+
+### Fixed
+- Se mejoró la validación previa a la publicación del paquete en pub.dev.
+
 ## [1.0.9+1] - 2025-06-14
 ### Fixed
 - Correcciones menores de rendimiento y optimización en vistas.
