@@ -1,9 +1,9 @@
-name: Publish Flutter Package to GitHub Packages
+name: Publish to pub.dev
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
 
 jobs:
   publish:
@@ -18,35 +18,13 @@ jobs:
         with:
           flutter-version: '3.22.0'
 
-      - name: Change to project directory and install dependencies
+      - name: Set pub.dev credentials
         run: |
-          cd chargepassv4
-          flutter pub get
+          mkdir -p ~/.pub-cache
+          echo '${{ secrets.PUB_CREDENTIALS }}' > ~/.pub-cache/credentials.json
 
-      - name: Get latest Git tag
-        id: get_tag
-        run: |
-          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.1")
-          echo "Latest tag: $TAG"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      - name: Get dependencies
+        run: flutter pub get
 
-      - name: Create package archive
-        run: |
-          mkdir -p build_pkg
-          cd chargepassv4
-          tar -czf ../build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz .
-
-      - name: Upload package to GitHub Packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: chargepassv4-${{ steps.get_tag.outputs.tag }}
-          path: build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.get_tag.outputs.tag }}
-          name: Release ${{ steps.get_tag.outputs.tag }}
-          files: build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish package
+        run: flutter pub publish -f

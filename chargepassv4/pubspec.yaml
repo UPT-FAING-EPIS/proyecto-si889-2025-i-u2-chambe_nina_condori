@@ -1,11 +1,7 @@
 name: chargepassv4
-description: "A new Flutter project."
+description: A Flutter-based password management app with Firebase integration, encryption, and UI customization.
 
-# No se publicará en pub.dev
-publish_to: 'none' 
-
-# Versión del paquete
-version: 1.0.1+1
+version: 1.0.3+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -13,6 +9,9 @@ environment:
 homepage: https://github.com/UPT-FAING-EPIS/chargepassv4
 repository: https://github.com/UPT-FAING-EPIS/chargepassv4
 issue_tracker: https://github.com/UPT-FAING-EPIS/chargepassv4/issues
+documentation: https://github.com/UPT-FAING-EPIS/chargepassv4#readme
+
+maintainer: Edgard Reynaldo <ec2019064917@virtual.upt.pe>
 
 dependencies:
   flutter:
@@ -47,3 +46,8 @@ flutter:
   assets:
     - assets/logcharge.png
     - assets/logchar.png
+
+false_secrets:
+  - /lib/firebase_options.dart
+  - /lib/config/firebase_options.dart
+  - /android/app/google-services.json
