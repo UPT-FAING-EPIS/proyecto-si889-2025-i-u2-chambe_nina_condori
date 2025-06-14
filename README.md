@@ -47,8 +47,7 @@ https://www.youtube.com/watch?v=pqg5qtxOhXs
 
 ### Reporte de Infracost
 
-![alt text](image.png)
-
+![image](https://github.com/user-attachments/assets/7faf53ad-2425-4685-a61d-0305c8f77a1a)
 
 Diagrama de Caso de Usos Iniciar Sesión:
 
