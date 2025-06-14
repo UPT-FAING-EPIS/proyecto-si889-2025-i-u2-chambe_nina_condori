@@ -1,3 +1,14 @@
+name: Publish Flutter Package to GitHub Packages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -7,8 +18,10 @@
         with:
           flutter-version: '3.22.0'
 
-      - name: Change to project directory
-        run: cd chargepassv4 && flutter pub get
+      - name: Change to project directory and install dependencies
+        run: |
+          cd chargepassv4
+          flutter pub get
 
       - name: Get latest Git tag
         id: get_tag
@@ -28,3 +41,12 @@
         with:
           name: chargepassv4-${{ steps.get_tag.outputs.tag }}
           path: build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          name: Release ${{ steps.get_tag.outputs.tag }}
+          files: build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
