@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2025-06-14
+### Added
+- Se agregó soporte para futuras extensiones modulares del sistema.
+- Preparación del paquete para integración continua con validaciones estrictas.
+
+### Changed
+- Se actualizaron dependencias y documentación para cumplir con nuevas políticas de publicación.
+- Mejoras en la estructura de carpetas y organización de archivos.
+
 ## [1.0.10] - 2025-06-14
 ### Changed
 - Se mejoró la documentación del proyecto y se corrigieron detalles menores de formato.
