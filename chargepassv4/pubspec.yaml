@@ -5,7 +5,7 @@ description: "A new Flutter project."
 publish_to: 'none' 
 
 # Versión del paquete (importante para el nombre del .tar.gz)
-version: 1.0.0+1
+version: 1.0.1+1
 
 environment:
   sdk: ">=3.7.2 <4.0.0"
