@@ -1,9 +1,9 @@
-name: Publish to pub.dev
+name: Publish to pub.dev using pubspec version and last tag
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    paths:
+      - 'chargepassv4/pubspec.yaml'
 
 jobs:
   publish:
@@ -24,7 +24,27 @@ jobs:
           echo '${{ secrets.PUB_CREDENTIALS }}' > ~/.pub-cache/credentials.json
 
       - name: Get dependencies
+        working-directory: chargepassv4
         run: flutter pub get
 
-      - name: Publish package
+      - name: Compare pubspec.yaml version with last tag
+        id: check
+        working-directory: chargepassv4
+        run: |
+          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
+          LAST_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          LAST_TAG_VERSION="${LAST_TAG#v}"
+
+          echo "pubspec.yaml version: $PUBSPEC_VERSION"
+          echo "Last Git tag: $LAST_TAG"
+
+          if [ "$PUBSPEC_VERSION" != "$LAST_TAG_VERSION" ]; then
+            echo "🚫 pubspec.yaml version does not match last tag."
+            exit 1
+          fi
+
+          echo "✅ Version matches. Proceeding to publish."
+
+      - name: Publish package to pub.dev
+        working-directory: chargepassv4
         run: flutter pub publish -f
