@@ -1,16 +1,16 @@
-name: Auto Release Flutter App
+name: Release from pubspec.yaml
 
 on:
   push:
     paths:
-      - 'chargepassv4/**'
+      - 'chargepassv4/pubspec.yaml'
 
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Set up Git user
@@ -18,64 +18,45 @@ jobs:
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
 
-    - name: Determine version bump
+    - name: Extract version from pubspec.yaml
       id: version
       run: |
-        git fetch --tags
+        VERSION=$(grep '^version:' chargepassv4/pubspec.yaml | awk '{print $2}' | cut -d "+" -f 1)
+        TAG="v$VERSION"
+        echo "Versión encontrada en pubspec.yaml: $VERSION"
+        echo "TAG=$TAG" >> $GITHUB_ENV
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-        LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
-        echo "Último tag encontrado: $LAST_TAG"
-
-        VERSION=${LAST_TAG#v}
-        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-        CHANGED_LINES=$(git diff --numstat $LAST_TAG HEAD -- 'chargepassv4/**' | awk '{added += $1; deleted += $2} END {print added + deleted}')
-        COMMIT_COUNT=$(git log $LAST_TAG..HEAD --pretty=format:"%H" -- 'chargepassv4/**' | wc -l)
-
-        if [ "$CHANGED_LINES" -ge 1 ] && [ "$CHANGED_LINES" -le 10 ]; then
-          PATCH=$((PATCH+1))
-        elif [ "$CHANGED_LINES" -gt 10 ] && [ "$CHANGED_LINES" -le 50 ]; then
-          MINOR=$((MINOR+1))
-          PATCH=0
-        elif [ "$CHANGED_LINES" -gt 100 ]; then
-          MAJOR=$((MAJOR+1))
-          MINOR=0
-          PATCH=0
-        elif [ "$CHANGED_LINES" -eq 0 ] && [ "$COMMIT_COUNT" -ge 1 ]; then
-          PATCH=$((PATCH+1))
-        else
-          echo "No hay suficientes cambios. Cancelando."
-          echo "new_tag=" >> $GITHUB_OUTPUT
-          exit 0
-        fi
-
-        NEW_TAG="v$MAJOR.$MINOR.$PATCH"
-        echo "Nuevo tag generado: $NEW_TAG"
-        echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
-    - name: Exit if no new tag
-      if: steps.version.outputs.new_tag == ''
-      run: echo "No se generó un nuevo tag, saliendo..."
-
-    - name: Create Git tag
-      if: steps.version.outputs.new_tag != ''
+    - name: Check if tag already exists
+      id: check_tag
       run: |
-        git tag ${{ steps.version.outputs.new_tag }}
-        git push origin ${{ steps.version.outputs.new_tag }}
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Tag $TAG ya existe. Cancelando."
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "Tag $TAG no existe. Continuando."
+          echo "exists=false" >> $GITHUB_OUTPUT
 
-    - name: Compress Flutter project
-      if: steps.version.outputs.new_tag != ''
+    - name: Exit if tag already exists
+      if: steps.check_tag.outputs.exists == 'true'
+      run: exit 0
+
+    - name: Create Git tag and push
+      run: |
+        git tag $TAG
+        git push origin $TAG
+
+    - name: Zip Flutter project
       run: |
         cd chargepassv4
-        zip -r ../chargepassv4-${{ steps.version.outputs.new_tag }}.zip .
+        zip -r ../chargepassv4-$TAG.zip .
 
     - name: Create GitHub Release
-      if: steps.version.outputs.new_tag != ''
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ steps.version.outputs.new_tag }}
-        name: Release ${{ steps.version.outputs.new_tag }}
-        files: chargepassv4-${{ steps.version.outputs.new_tag }}.zip
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Release ${{ steps.version.outputs.tag }}
+        files: chargepassv4-${{ steps.version.outputs.tag }}.zip
         make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
