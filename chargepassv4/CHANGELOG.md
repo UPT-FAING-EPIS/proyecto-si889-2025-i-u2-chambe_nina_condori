@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.5+1] - 2025-06-14
+## [1.0.571] - 2025-06-14
 ### Added
 - Publicación inicial del paquete `chargepassv4` en pub.dev.
 - Integración completa con Firebase (Auth, Firestore, Storage, Messaging).
@@ -13,7 +13,7 @@
 
 ---
 
-## [1.0.6] - Borrador inicial 1
+## [1.0.7] - Borrador inicial 1
 - Estructura base del proyecto creada localmente.
 
 ## [0.0.1] - Borrador inicial

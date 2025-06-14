@@ -1,4 +1,4 @@
-name: Publish to pub.dev using pubspec version and last tag
+name: Auto Publish to pub.dev from pubspec.yaml
 
 on:
   push:
@@ -27,23 +27,26 @@ jobs:
         working-directory: chargepassv4
         run: flutter pub get
 
-      - name: Compare pubspec.yaml version with last tag
-        id: check
-        working-directory: chargepassv4
+      - name: Check or create Git tag from pubspec.yaml
+        id: tag
         run: |
-          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
-          LAST_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
-          LAST_TAG_VERSION="${LAST_TAG#v}"
+          VERSION=$(grep '^version:' chargepassv4/pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
+          TAG="v$VERSION"
 
-          echo "pubspec.yaml version: $PUBSPEC_VERSION"
-          echo "Last Git tag: $LAST_TAG"
+          echo "📌 Versión encontrada en pubspec.yaml: $VERSION"
+          echo "🔎 Buscando si el tag $TAG ya existe..."
 
-          if [ "$PUBSPEC_VERSION" != "$LAST_TAG_VERSION" ]; then
-            echo "🚫 pubspec.yaml version does not match last tag."
-            exit 1
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "✅ Tag $TAG ya existe."
+          else
+            echo "🔧 Tag $TAG no existe. Creándolo..."
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
           fi
 
-          echo "✅ Version matches. Proceeding to publish."
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
 
       - name: Publish package to pub.dev
         working-directory: chargepassv4
