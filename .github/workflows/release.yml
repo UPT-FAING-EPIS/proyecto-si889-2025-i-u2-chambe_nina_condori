@@ -1,0 +1,81 @@
+name: Auto Release Flutter App
+
+on:
+  push:
+    paths:
+      - 'chargepassv4/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Git user
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+
+    - name: Determine version bump
+      id: version
+      run: |
+        git fetch --tags
+        
+        LAST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "Último tag encontrado: $LAST_TAG"
+
+        # Obtener partes del último tag
+        VERSION=${LAST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        
+        # Contar líneas cambiadas
+        CHANGED_LINES=$(git diff --numstat $LAST_TAG HEAD -- 'chargepassv4/**' | awk '{added += $1; deleted += $2} END {print added + deleted}')
+        echo "Líneas cambiadas: $CHANGED_LINES"
+
+        # Contar commits que afectaron chargepassv4 desde el último tag
+        COMMIT_COUNT=$(git log $LAST_TAG..HEAD --pretty=format:"%H" -- 'chargepassv4/**' | wc -l)
+        echo "Commits detectados desde último tag: $COMMIT_COUNT"
+
+        # Lógica de incremento
+        if [ "$CHANGED_LINES" -ge 1 ] && [ "$CHANGED_LINES" -le 10 ]; then
+          PATCH=$((PATCH+1))
+        elif [ "$CHANGED_LINES" -gt 10 ] && [ "$CHANGED_LINES" -le 50 ]; then
+          MINOR=$((MINOR+1))
+          PATCH=0
+        elif [ "$CHANGED_LINES" -gt 100 ]; then
+          MAJOR=$((MAJOR+1))
+          MINOR=0
+          PATCH=0
+        elif [ "$CHANGED_LINES" -eq 0 ] && [ "$COMMIT_COUNT" -ge 1 ]; then
+          echo "No hay cambios de líneas, pero sí commits. Incrementando patch."
+          PATCH=$((PATCH+1))
+        else
+          echo "No hay suficientes cambios ni commits relevantes para generar un nuevo release."
+          exit 0
+        fi
+
+        NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+        echo "Nuevo tag generado: $NEW_TAG"
+
+        echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+    - name: Create Git tag
+      run: |
+        git tag ${{ steps.version.outputs.new_tag }}
+        git push origin ${{ steps.version.outputs.new_tag }}
+
+    - name: Compress Flutter project
+      run: |
+        cd chargepassv4
+        zip -r ../chargepassv4-${{ steps.version.outputs.new_tag }}.zip .
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.new_tag }}
+        name: Release ${{ steps.version.outputs.new_tag }}
+        files: chargepassv4-${{ steps.version.outputs.new_tag }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
