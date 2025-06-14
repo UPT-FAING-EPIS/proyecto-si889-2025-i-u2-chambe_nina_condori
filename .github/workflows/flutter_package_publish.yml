@@ -1,0 +1,40 @@
+name: Publish Flutter Package to GitHub Packages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Get latest Git tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 || echo "v0.0.1")
+          echo "Latest tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create package archive
+        run: |
+          mkdir -p build_pkg
+          tar -czf build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz .
+
+      - name: Upload package to GitHub Packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: chargepassv4-${{ steps.get_tag.outputs.tag }}
+          path: build_pkg/chargepassv4-${{ steps.get_tag.outputs.tag }}.tar.gz
