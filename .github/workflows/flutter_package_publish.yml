@@ -1,16 +1,22 @@
-name: Auto Publish to pub.dev from pubspec.yaml
+name: Publish Flutter Package to pub.dev
 
 on:
   push:
     paths:
-      - 'chargepassv4/pubspec.yaml'
+      - 'chargepassv4/pubspec.yaml'  # Ajusta si el path es diferente
+    branches:
+      - main
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: chargepassv4  # Ajusta si es necesario
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Flutter
@@ -23,31 +29,26 @@ jobs:
           mkdir -p ~/.pub-cache
           echo '${{ secrets.PUB_CREDENTIALS }}' > ~/.pub-cache/credentials.json
 
-      - name: Get dependencies
-        working-directory: chargepassv4
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Check or create Git tag from pubspec.yaml
-        id: tag
+      - name: Extract version from pubspec.yaml
+        id: version
         run: |
-          VERSION=$(grep '^version:' chargepassv4/pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
-          TAG="v$VERSION"
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-          echo "📌 Versión encontrada en pubspec.yaml: $VERSION"
-          echo "🔎 Buscando si el tag $TAG ya existe..."
-
+      - name: Create tag from pubspec.yaml version (if not exists)
+        run: |
+          TAG="v${{ steps.version.outputs.VERSION }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "✅ Tag $TAG ya existe."
+            echo "Tag $TAG already exists. Skipping tag creation."
           else
-            echo "🔧 Tag $TAG no existe. Creándolo..."
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git tag "$TAG"
-            git push origin "$TAG"
+            git config --global user.name "github-actions"
+            git config --global user.email "github-actions@github.com"
+            git tag $TAG
+            git push origin $TAG
           fi
 
-          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
-
       - name: Publish package to pub.dev
-        working-directory: chargepassv4
         run: flutter pub publish -f
